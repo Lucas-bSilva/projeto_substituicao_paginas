@@ -7,7 +7,10 @@ Formato esperado do arquivo:
 - Demais linhas: sequência de referências a páginas (um inteiro por linha).
 """
 
+# Importa tipos de anotações para melhor legibilidade (List, Tuple, TextIO)
 from typing import List, Tuple, TextIO
+
+# Importa módulo sys para conseguir acessar a entrada padrão (stdin)
 import sys
 
 
@@ -24,20 +27,22 @@ def _ler_inteiros(f: TextIO) -> List[int]:
     Exceções:
     - ValueError: se alguma linha não for um inteiro válido.
     """
-    valores = []
+    valores = []  # Cria uma lista vazia para armazenar os números lidos
+
+    # Percorre cada linha do arquivo de entrada
     for linha in f:
-        s = linha.strip()  # remove espaços em branco e quebras de linha
+        s = linha.strip()  # Remove espaços em branco e quebras de linha
         if s == "":
-            # Ignora linhas em branco
+            # Se a linha estiver em branco, simplesmente ignora
             continue
         try:
-            valores.append(int(s))  # converte para inteiro e adiciona
+            valores.append(int(s))  # Converte a string para inteiro e adiciona à lista
         except ValueError:
-            # Se a conversão falhar, lança erro explicando o problema
+            # Se a conversão falhar, lança um erro indicando a linha inválida
             raise ValueError(
                 f"Linha inválida no arquivo de entrada: '{linha.strip()}' (não é inteiro)"
             )
-    return valores
+    return valores  # Retorna a lista de números inteiros lidos
 
 
 def carregar_entrada(caminho: str) -> Tuple[int, List[int]]:
@@ -57,18 +62,19 @@ def carregar_entrada(caminho: str) -> Tuple[int, List[int]]:
     - ValueError: se o arquivo estiver vazio ou mal formatado.
     """
     if caminho == '-':
-        # Lê dados da entrada padrão (útil para redirecionamento via terminal)
+        # Caso o caminho seja '-', lê os dados diretamente da entrada padrão (stdin)
         valores = _ler_inteiros(sys.stdin)
     else:
-        # Abre o arquivo e lê os valores
+        # Caso contrário, abre o arquivo informado e lê os números
         with open(caminho, 'r', encoding='utf-8') as f:
             valores = _ler_inteiros(f)
 
     if not valores:
-        # Se não houver nenhum número no arquivo, é inválido
+        # Se a lista de valores estiver vazia, significa que o arquivo não tem dados válidos
         raise ValueError("Arquivo de entrada vazio.")
 
-    frames = valores[0]       # Primeiro valor = quantidade de quadros
-    referencias = valores[1:] # Demais valores = sequência de referências
+    frames = valores[0]        # O primeiro número do arquivo é a quantidade de quadros
+    referencias = valores[1:]  # Os demais números representam as referências de páginas
 
+    # Retorna uma tupla contendo a quantidade de quadros e a lista de referências
     return frames, referencias

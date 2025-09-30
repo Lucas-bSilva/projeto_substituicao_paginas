@@ -1,5 +1,5 @@
 """
-Responsável por:
+Utilidade:
 - Validar argumentos da linha de comando;
 - Ler o arquivo de entrada no formato esperado;
 - Executar os três algoritmos de substituição de páginas (FIFO, OTM, LRU);
@@ -7,8 +7,8 @@ Responsável por:
 """
 
 import sys
-from algorithms import fifo_faults, otm_faults, lru_faults   # Importa os algoritmos implementados
-from io_utils import carregar_entrada                       # Função para carregar e validar a entrada
+from algorithms import fifo_faltas, otm_faltas, lru_faltas   # Importa os algoritmos implementados
+from io_utils import carregar_entrada                        # Função para carregar e validar a entrada
 
 
 def main(argv):
@@ -29,14 +29,14 @@ def main(argv):
         sys.stderr.write("Uso: python main.py <arquivo_de_entrada>\n")
         return 2  # Erro de uso (parâmetros incorretos)
 
-    caminho = argv[1]  # Caminho do arquivo de entrada fornecido pelo usuário
+    caminho_entrada = argv[1]  # Caminho do arquivo de entrada fornecido pelo usuário
 
     try:
         # Lê os dados do arquivo de entrada
         # Retorna:
-        # - frames: número de quadros disponíveis
+        # - quadros: número de quadros disponíveis
         # - referencias: sequência de referências a páginas
-        frames, referencias = carregar_entrada(caminho)
+        quadros, referencias = carregar_entrada(caminho_entrada)
     except Exception as e:
         # Caso ocorra erro na leitura ou formatação do arquivo,
         # imprime mensagem no stderr (não interfere na saída padrão)
@@ -46,18 +46,18 @@ def main(argv):
     # =============================
     # Execução dos algoritmos
     # =============================
-    fifo = fifo_faults(referencias, frames)   # Algoritmo FIFO (First-In, First-Out)
-    otm  = otm_faults(referencias, frames)    # Algoritmo Ótimo (Optimal Page Replacement)
-    lru  = lru_faults(referencias, frames)    # Algoritmo LRU (Least Recently Used)
+    faltas_fifo = fifo_faltas(referencias, quadros)   # Algoritmo FIFO (First-In, First-Out)
+    faltas_otm  = otm_faltas(referencias, quadros)    # Algoritmo ÓTIMO (Optimal Page Replacement)
+    faltas_lru  = lru_faltas(referencias, quadros)    # Algoritmo LRU (Least Recently Used)
 
     # =============================
     # Impressão dos resultados
     # =============================
     # O formato de saída é estritamente definido:
     # <NOME_ALGORITMO> <NÚMERO_DE_FALTAS>
-    print(f"FIFO {fifo}")
-    print(f"OTM {otm}")
-    print(f"LRU {lru}")
+    print(f"FIFO {faltas_fifo}")
+    print(f"OTM {faltas_otm}")
+    print(f"LRU {faltas_lru}")
 
     return 0  # Execução concluída com sucesso
 

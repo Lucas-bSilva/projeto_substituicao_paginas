@@ -1,146 +1,109 @@
 """
-Algoritmos de substituição de páginas (FIFO, Ótimo/OTM, LRU).
+Algoritmos de substituição de páginas: FIFO, ÓTIMO (OTM) e LRU.
 
 Cada função recebe:
-- references: lista de inteiros representando a sequência de referências a páginas;
-- frames: inteiro com a quantidade de quadros disponíveis;
+- referencias (List[int]): sequência de referências a páginas.
+- quadros (int): quantidade de quadros (espaços de memória disponíveis).
 
 Retorna:
-- int: número total de faltas de página.
+- int: número total de faltas de página (page faults).
 """
 
-from collections import deque
-from typing import List
+from collections import deque   # Importa deque (fila dupla) para gerenciar ordem de chegada no FIFO
+from typing import List         # Importa List para anotações de tipo
 
 
-# ==============================
+# ============================================================
 # Algoritmo FIFO (First-In First-Out)
-# ==============================
-def fifo_faults(references: List[int], frames: int) -> int:
-    """
-    Implementa o algoritmo de substituição de páginas FIFO.
-    A página mais antiga na memória (a que entrou primeiro) é a primeira a sair.
-    """
-    if frames <= 0:  # Caso não haja quadros disponíveis
-        return 0
+# ============================================================
+def fifo_faltas(referencias: List[int], quadros: int) -> int:
+    if quadros <= 0:                     # Se o número de quadros for zero ou negativo
+        return 0                         # Não há como armazenar páginas → retorna 0
 
-    faltas = 0                   # Contador de faltas de página
-    memoria = set()              # Conjunto com as páginas atualmente na memória
-    fila = deque()               # Fila que mantém a ordem de chegada das páginas
+    faltas = 0                           # Contador de faltas de página começa em 0
+    memoria = set()                      # Conjunto que guarda as páginas atualmente carregadas
+    fila = deque()                       # Fila para controlar a ordem em que as páginas entraram
 
-    for p in references:         # Percorre a sequência de referências
-        if p in memoria:
-            # HIT: página já está na memória, nada é feito
-            continue
+    for pagina in referencias:           # Percorre cada referência de página na sequência
+        if pagina in memoria:            # Verifica se a página já está na memória
+            continue                     # Se já estiver, segue sem registrar falta
 
-        # MISS: página não está na memória
-        faltas += 1
-        if len(memoria) < frames:
-            # Ainda há espaço livre na memória, apenas adiciona
-            memoria.add(p)
-            fila.append(p)
-        else:
-            # Memória cheia: remove a mais antiga (primeiro da fila)
-            sair = fila.popleft()
-            memoria.remove(sair)
+        faltas += 1                      # Caso contrário, conta uma falta de página
+        if len(memoria) < quadros:       # Se ainda houver espaço disponível nos quadros
+            memoria.add(pagina)          # Adiciona a nova página ao conjunto
+            fila.append(pagina)          # Coloca a página na fila de chegada
+        else:                            # Se a memória já estiver cheia
+            sair = fila.popleft()        # Remove a página mais antiga (primeira da fila)
+            memoria.remove(sair)         # Remove essa página também do conjunto
+            memoria.add(pagina)          # Adiciona a nova página
+            fila.append(pagina)          # E coloca a nova página no final da fila
 
-            # Adiciona a nova página
-            memoria.add(p)
-            fila.append(p)
-
-    return faltas
+    return faltas                        # Retorna o total de faltas encontradas
 
 
-# ==============================
-# Algoritmo ÓTIMO (Optimal - OTM)
-# ==============================
-def otm_faults(references: List[int], frames: int) -> int:
-    """
-    Algoritmo Ótimo (Optimal / OTM).
-    Remove a página cujo próximo uso está mais distante no futuro.
-    Se uma página nunca mais for usada, ela é escolhida como vítima.
-    """
-    if frames <= 0:
-        return 0
+# ============================================================
+# Algoritmo ÓTIMO (Optimal / OTM)
+# ============================================================
+def otm_faltas(referencias: List[int], quadros: int) -> int:
+    if quadros <= 0:                     # Se não há quadros disponíveis
+        return 0                         # Não há como armazenar páginas → retorna 0
 
-    faltas = 0
-    memoria: List[int] = []      # Representa os quadros como lista de páginas
-    n = len(references)          # Tamanho da sequência de referências
+    faltas = 0                           # Contador de faltas de página
+    memoria: List[int] = []              # Lista que representa as páginas atualmente na memória
 
-    for i, p in enumerate(references):
-        if p in memoria:
-            # HIT: página já está na memória
-            continue
+    for i, pagina in enumerate(referencias):   # Percorre cada referência com índice i
+        if pagina in memoria:                  # Se a página já estiver na memória
+            continue                           # Nada é feito (não ocorre falta)
 
-        # MISS: página não está na memória
-        faltas += 1
-        if len(memoria) < frames:
-            # Se houver espaço, apenas adiciona a página
-            memoria.append(p)
-            continue
+        faltas += 1                            # Página não encontrada → conta uma falta
+        if len(memoria) < quadros:             # Se ainda houver espaço disponível
+            memoria.append(pagina)             # Adiciona a página diretamente à memória
+            continue                           # Vai para a próxima referência
 
-        # Escolher a página vítima
-        # Critério: próxima utilização mais distante (ou nunca usada)
-        idx_mais_distante = -1
-        pagina_vitima = None
+        indice_mais_distante = -1              # Guarda o índice do uso mais distante encontrado
+        pagina_vitima = None                   # Página candidata à remoção começa vazia
 
-        for q in memoria:
+        for atual in memoria:                  # Percorre cada página atualmente na memória
             try:
-                # Procura a próxima vez que q será usada
-                proximo_uso = references.index(q, i + 1)
-            except ValueError:
-                # Página q nunca mais será usada → melhor escolha
-                pagina_vitima = q
-                break
-            # Atualiza se esta página será usada mais distante que a atual candidata
-            if proximo_uso > idx_mais_distante:
-                idx_mais_distante = proximo_uso
-                pagina_vitima = q
+                proximo_uso = referencias.index(atual, i + 1)  # Procura quando será usada de novo
+            except ValueError:                 # Se a página não aparecer mais
+                pagina_vitima = atual          # Ela será a escolhida para remoção
+                break                          # Encerra o laço, pois já achou a vítima ideal
 
-        # Substitui a vítima pela nova página
-        pos = memoria.index(pagina_vitima)
-        memoria[pos] = p
+            if proximo_uso > indice_mais_distante:   # Se o uso dessa página está mais distante
+                indice_mais_distante = proximo_uso   # Atualiza o índice mais distante
+                pagina_vitima = atual                # Define essa página como candidata
 
-    return faltas
+        pos = memoria.index(pagina_vitima)    # Descobre a posição da página vítima na memória
+        memoria[pos] = pagina                 # Substitui pela nova página
+
+    return faltas                             # Retorna o total de faltas encontradas
 
 
-# ==============================
+# ============================================================
 # Algoritmo LRU (Least Recently Used)
-# ==============================
-def lru_faults(references: List[int], frames: int) -> int:
-    """
-    Implementa o algoritmo LRU.
-    Remove a página menos recentemente usada (a que ficou mais tempo sem ser acessada).
-    """
-    if frames <= 0:
-        return 0
+# ============================================================
+def lru_faltas(referencias: List[int], quadros: int) -> int:
+    if quadros <= 0:                          # Se não há quadros disponíveis
+        return 0                              # Não há como armazenar páginas → retorna 0
 
-    faltas = 0
-    memoria: List[int] = []        # Lista das páginas atualmente na memória
-    ultimo_uso = {}                # Dicionário: página -> último índice de acesso
+    faltas = 0                                # Contador de faltas
+    memoria: List[int] = []                   # Lista de páginas carregadas
+    ultimo_uso = {}                           # Dicionário que registra o último índice de uso de cada página
 
-    for i, p in enumerate(references):
-        if p in memoria:
-            # HIT: atualiza o último acesso da página
-            ultimo_uso[p] = i
-            continue
+    for i, pagina in enumerate(referencias):  # Percorre cada referência com índice i
+        if pagina in memoria:                 # Se a página já está na memória
+            ultimo_uso[pagina] = i            # Atualiza o índice de último uso
+            continue                          # Segue para a próxima referência
 
-        # MISS: página não está na memória
-        faltas += 1
-        if len(memoria) < frames:
-            # Se ainda há espaço, insere diretamente
-            memoria.append(p)
-            ultimo_uso[p] = i
-        else:
-            # Memória cheia → escolher a vítima (página com menor índice de último uso)
-            vitima = min(memoria, key=lambda x: ultimo_uso.get(x, -1))
-            pos = memoria.index(vitima)
+        faltas += 1                           # Página não encontrada → conta uma falta
+        if len(memoria) < quadros:            # Se ainda houver espaço disponível
+            memoria.append(pagina)            # Adiciona a página à memória
+            ultimo_uso[pagina] = i            # Registra o índice de uso dessa página
+        else:                                 # Se a memória já estiver cheia
+            vitima = min(memoria, key=lambda x: ultimo_uso.get(x, -1))  # Acha a menos recentemente usada
+            pos = memoria.index(vitima)       # Descobre a posição da vítima na lista
+            memoria[pos] = pagina             # Substitui a vítima pela nova página
+            ultimo_uso[pagina] = i            # Atualiza o último uso da nova página
 
-            # Substitui a vítima pela nova página
-            memoria[pos] = p
-            ultimo_uso[p] = i  # Atualiza o tempo de uso da nova página
-
-            # Obs: não é obrigatório remover a vítima do dicionário,
-            # pois ela não estará mais em 'memoria'.
-
-    return faltas
+    return faltas                             # Retorna o total de faltas encontradas
